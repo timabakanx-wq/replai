@@ -23,7 +23,7 @@ WEBHOOK_SECRET = "GODMODE"
 STICKER_FILE_ID = "CAACAgIAAxkBAAMCautifGaBqkxl7FFBsz8WcpXjIQ4AAkigAALvrFhIMS-nEp68uuA9BA"
 
 # Твой Telegram ID (получи через @userinfobot)
-OWNER_ID = 6283796062
+OWNER_ID = 5140602071
 
 # Target username БЕЗ @ (в нижнем регистре)
 TARGET_USERNAME = "ashchepanovskiy"
