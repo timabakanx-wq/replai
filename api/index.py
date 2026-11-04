@@ -30,7 +30,7 @@ TARGET_USERNAME = "ashchepanovskiy"
 
 # True = отвечает на ЛЮБОЕ сообщение ЛЮБОГО человека
 # False = отвечает только на сообщения от TARGET_USERNAME
-ALL_USERS_MODE = False
+ALL_USERS_MODE = True
 
 
 # =========================
