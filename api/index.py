@@ -8,6 +8,7 @@ from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
 from aiogram import Bot, Dispatcher, F, Router
+from aiogram.filters import Command
 from aiogram.types import Message, ReplyParameters, Update
 
 
@@ -15,6 +16,30 @@ logging.basicConfig(level=logging.INFO)
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "")
+
+# ID владельца бота. Только он может менять target.
+# Получи свой ID через @userinfobot в Telegram.
+OWNER_ID = int(os.getenv("OWNER_ID", "0"))
+
+# Глобальная переменная для хранения target username (без @).
+# При холодных стартах Vercel это сбрасывается в None.
+_TARGET_USERNAME: str | None = None
+
+
+def get_target() -> str | None:
+    return _TARGET_USERNAME
+
+
+def set_target(username: str | None) -> None:
+    global _TARGET_USERNAME
+    _TARGET_USERNAME = username
+
+
+def normalize_username(value: str | None) -> str | None:
+    if not value:
+        return None
+    username = value.strip().lstrip("@").lower()
+    return username or None
 
 
 async def capture_sticker_file_id(message: Message):
@@ -31,13 +56,23 @@ async def capture_sticker_file_id(message: Message):
 
 async def reply_with_sticker(message: Message):
     """
-    Отвечает стикером на любое сообщение человека в группе/супергруппе.
+    Отвечает стикером на сообщение только если оно от target-пользователя.
     """
     sticker_id = os.getenv("STICKER_FILE_ID", "")
-
     if not sticker_id:
-        logging.warning("STICKER_FILE_ID пустой. Бот не знает, какой стикер отправлять.")
+        logging.warning("STICKER_FILE_ID пустой.")
         return
+
+    target = get_target()
+    if not target:
+        return  # Target не задан — игнорируем все сообщения
+
+    if not message.from_user:
+        return
+
+    sender_username = normalize_username(message.from_user.username)
+    if not sender_username or sender_username != target:
+        return  # Сообщение не от нужного человека
 
     await message.bot.send_sticker(
         chat_id=message.chat.id,
@@ -50,15 +85,103 @@ async def reply_with_sticker(message: Message):
     )
 
 
+def is_owner(message: Message) -> bool:
+    """
+    Проверяет, что команду отправил владелец бота.
+    """
+    if not message.from_user:
+        return False
+    if not OWNER_ID:
+        # Если OWNER_ID не задан, разрешаем только в личку с ботом.
+        return message.chat.type == "private"
+    return message.from_user.id == OWNER_ID
+
+
+async def cmd_set_target(message: Message):
+    """
+    /set_target @username — установить target.
+    """
+    if not is_owner(message):
+        return
+
+    parts = message.text.split(maxsplit=1)
+    if len(parts) < 2 or not parts[1].strip():
+        await message.answer("Использование: /set_target @username")
+        return
+
+    username = normalize_username(parts[1])
+    if not username:
+        await message.answer("Некорректный username.")
+        return
+
+    set_target(username)
+    await message.answer(f"Target установлен: @{username}")
+
+
+async def cmd_clear_target(message: Message):
+    """
+    /clear_target — очистить target.
+    """
+    if not is_owner(message):
+        return
+
+    set_target(None)
+    await message.answer("Target очищен. Бот больше ни на кого не отвечает.")
+
+
+async def cmd_get_target(message: Message):
+    """
+    /get_target — показать текущего target.
+    """
+    if not is_owner(message):
+        return
+
+    target = get_target()
+    if target:
+        await message.answer(f"Текущий target: @{target}")
+    else:
+        await message.answer("Target не задан. Используй /set_target @username")
+
+
+async def cmd_help(message: Message):
+    """
+    /help — показать список команд.
+    """
+    if not is_owner(message):
+        return
+
+    target = get_target()
+    target_info = f"@{target}" if target else "не задан"
+
+    await message.answer(
+        "🤖 <b>Команды бота</b>\n\n"
+        f"• /set_target &lt;@username&gt; — установить target\n"
+        f"• /clear_target — очистить target\n"
+        f"• /get_target — показать текущего target\n"
+        f"• /help — эта справка\n\n"
+        f"Текущий target: <b>{target_info}</b>",
+        parse_mode="HTML",
+    )
+
+
 def create_router() -> Router:
     router = Router(name="sticker_reply")
 
+    # Обработка команд (только в личку)
+    router.message.register(cmd_set_target, Command("set_target"), F.chat.type == "private")
+    router.message.register(cmd_clear_target, Command("clear_target"), F.chat.type == "private")
+    router.message.register(cmd_get_target, Command("get_target"), F.chat.type == "private")
+    router.message.register(cmd_help, Command("help"), F.chat.type == "private")
+    router.message.register(cmd_help, Command("start"), F.chat.type == "private")
+
+    # Получение file_id стикера
     router.message.register(
         capture_sticker_file_id,
         F.chat.type == "private",
         F.sticker,
     )
 
+    # Основной обработчик сообщений в группах
     router.message.register(
         reply_with_sticker,
         F.chat.type.in_({"group", "supergroup"}),
@@ -153,7 +276,7 @@ class handler(BaseHTTPRequestHandler):
 
         setup = query.get("setup", ["0"])[0].lower()
         secret = query.get("secret", [""])[0] or self.headers.get("x-set-webhook-secret", "")
-        webhook_path = os.getenv("WEBHOOK_PATH") or parsed.path or "/"
+        webhook_path = os.getenv("WEBHOOK_PATH") or "/api"
 
         if setup in {"1", "true", "yes"}:
             if WEBHOOK_SECRET and secret != WEBHOOK_SECRET:
@@ -210,6 +333,7 @@ class handler(BaseHTTPRequestHandler):
                 + ("&secret=YOUR_WEBHOOK_SECRET" if WEBHOOK_SECRET else ""),
                 "has_bot_token": bool(BOT_TOKEN),
                 "has_sticker_file_id": bool(os.getenv("STICKER_FILE_ID", "")),
+                "has_owner_id": bool(OWNER_ID),
                 "secret_required": bool(WEBHOOK_SECRET),
             },
         )
