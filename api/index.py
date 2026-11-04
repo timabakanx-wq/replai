@@ -26,7 +26,7 @@ STICKER_FILE_ID = "CAACAgIAAxkBAAMCautifGaBqkxl7FFBsz8WcpXjIQ4AAkigAALvrFhIMS-nE
 OWNER_ID = 5140602071
 
 # Target username БЕЗ @ (в нижнем регистре)
-TARGET_USERNAME = "ashchepanovskiy"
+TARGET_USERNAME = "ashcepanovskiy"
 
 # True = отвечает на ЛЮБОЕ сообщение ЛЮБОГО человека
 # False = отвечает только на сообщения от TARGET_USERNAME
