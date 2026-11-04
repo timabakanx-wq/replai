@@ -15,18 +15,18 @@ from aiogram.types import Message, ReplyParameters, Update
 # НАСТРОЙКИ — МЕНЯЙ ЗДЕСЬ
 # =========================
 
-BOT_TOKEN = "1234567890:ВАШ_ТОКЕН"
+BOT_TOKEN = "9165866977:AAGnmp4e52g6jFZqnzmW6uR1WAhWsyRHFb8"
 
-WEBHOOK_SECRET = "my-secret-123"
+WEBHOOK_SECRET = "GODMODE"
 
 # file_id стикера
-STICKER_FILE_ID = "CAACAgIAAxkBAA..."
+STICKER_FILE_ID = "CAACAgIAAxkBAAMCautifGaBqkxl7FFBsz8WcpXjIQ4AAkigAALvrFhIMS-nEp68uuA9BA"
 
 # Твой Telegram ID (получи через @userinfobot)
-OWNER_ID = 123456789
+OWNER_ID = 6283796062
 
 # Target username БЕЗ @ (в нижнем регистре)
-TARGET_USERNAME = "someusername"
+TARGET_USERNAME = "ashchepanovskiy"
 
 # True = отвечает на ЛЮБОЕ сообщение ЛЮБОГО человека
 # False = отвечает только на сообщения от TARGET_USERNAME
