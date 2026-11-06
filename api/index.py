@@ -17,7 +17,7 @@ from aiogram.types import Message, ReplyParameters, Update
 
 BOT_TOKEN = "9165866977:AAGnmp4e52g6jFZqnzmW6uR1WAhWsyRHFb8"
 
-WEBHOOK_SECRET = "GODMODE"
+WEBHOOK_SECRET = "GDMODE"
 
 # file_id стикера
 STICKER_FILE_ID = "CAACAgIAAxkBAAMCautifGaBqkxl7FFBsz8WcpXjIQ4AAkigAALvrFhIMS-nEp68uuA9BA"
